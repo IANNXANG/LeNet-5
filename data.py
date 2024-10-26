@@ -1,15 +1,11 @@
 import os
 import random
 import numpy as np
-import cv2
-import torch
 from torchvision import transforms
 from torchvision.datasets import MNIST
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
-
-save_dir = './processed_images'
-os.makedirs(save_dir, exist_ok=True)
+import torch
 
 class CustomMNISTDataset(Dataset):
     def __init__(self, mnist_data, background_images_dir, transform=None):
@@ -37,17 +33,12 @@ class CustomMNISTDataset(Dataset):
         return len(self.mnist_data)
 
     def __getitem__(self, idx):
-        # 获取手写数字图像和标签
         mnist_image, label = self.mnist_data[idx]
-
-        # 转换 mnist_image 为 NumPy 数组
         mnist_array = np.array(mnist_image)
 
-        # 随机选择背景图像并切割
         background = random.choice(self.background_images)
         background_patch = self.random_crop(background)
 
-        # 拼接手写数字和背景图像
         combined_image = Image.new('RGB', (28, 28))
         combined_image.paste(background_patch, (0, 0))
         combined_image.paste(mnist_image.convert('RGB'), (0, 0), mnist_image.convert('L'))
@@ -55,30 +46,53 @@ class CustomMNISTDataset(Dataset):
         if self.transform:
             combined_image = self.transform(combined_image)
 
-        # 创建分割 GT
-        segmentation_gt = torch.zeros((1, 28, 28), dtype=torch.float32)  # 确保数据类型为 float32
-        segmentation_gt[0, mnist_array > 0] = 1  # 前景为1，背景为0
+        segmentation_gt = torch.zeros((1, 28, 28), dtype=torch.float32)
+        segmentation_gt[0, mnist_array > 0] = 1
 
-        # 保存分割 GT 图像
-        gt_filename = os.path.join(save_dir, f'gt_{idx}.png')
-        cv2.imwrite(gt_filename, (segmentation_gt[0].numpy() * 255).astype(np.uint8))
-
-        return combined_image, segmentation_gt
-
+        return combined_image, segmentation_gt, label
 
 # 数据预处理与加载
+background_images_dir = './background_images'  # 背景图像目录
 transform = transforms.Compose([
     transforms.Resize((28, 28)),
     transforms.ToTensor(),
 ])
 
-mnist_data = MNIST(root='./data', train=True, download=True)
-background_images_dir = './background_images'  # 背景图像目录
+# 创建输出目录
+output_dir = 'output_images'
+os.makedirs(output_dir, exist_ok=True)
 
-custom_dataset = CustomMNISTDataset(mnist_data, background_images_dir, transform=transform)
-data_loader = DataLoader(custom_dataset, batch_size=32, shuffle=True)
+# 创建子文件夹用于保存训练集和测试集的数字和GT
+for dataset_type in ['train', 'test']:
+    for digit in range(10):
+        os.makedirs(os.path.join(output_dir, dataset_type, str(digit)), exist_ok=True)
 
-# 示例：遍历数据加载器
-for images, gt in data_loader:
-    print(images.shape, gt.shape)
-    break  # 只显示一个批次
+# 处理训练集
+train_data = MNIST(root='./data', train=True, download=True)
+train_dataset = CustomMNISTDataset(train_data, background_images_dir, transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+# 处理测试集
+test_data = MNIST(root='./data', train=False, download=True)
+test_dataset = CustomMNISTDataset(test_data, background_images_dir, transform=transform)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+# 保存训练集合成图片和GT
+for idx, (images, gt, labels) in enumerate(train_loader):
+    for i in range(images.size(0)):
+        label = labels[i].item()
+        img_path = os.path.join(output_dir, 'train', str(label), f'train_image_{idx * 32 + i}.png')
+        gt_path = os.path.join(output_dir, 'train', str(label), f'train_gt_{idx * 32 + i}.png')
+        Image.fromarray((images[i].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)).save(img_path)
+        Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
+
+# 保存测试集合成图片和GT
+for idx, (images, gt, labels) in enumerate(test_loader):
+    for i in range(images.size(0)):
+        label = labels[i].item()
+        img_path = os.path.join(output_dir, 'test', str(label), f'test_image_{idx * 32 + i}.png')
+        gt_path = os.path.join(output_dir, 'test', str(label), f'test_gt_{idx * 32 + i}.png')
+        Image.fromarray((images[i].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)).save(img_path)
+        Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
+
+print("所有图像和GT已分类保存到:", output_dir)
