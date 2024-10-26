@@ -1,11 +1,12 @@
 import os
 import random
 import numpy as np
+import torch
 from torchvision import transforms
 from torchvision.datasets import MNIST
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
-import torch
+
 
 class CustomMNISTDataset(Dataset):
     def __init__(self, mnist_data, background_images_dir, transform=None):
