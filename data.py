@@ -52,48 +52,50 @@ class CustomMNISTDataset(Dataset):
 
         return combined_image, segmentation_gt, label
 
-# 数据预处理与加载
-background_images_dir = './background_images'  # 背景图像目录
-transform = transforms.Compose([
-    transforms.Resize((28, 28)),
-    transforms.ToTensor(),
-])
 
-# 创建输出目录
-output_dir = 'output_images'
-os.makedirs(output_dir, exist_ok=True)
+if __name__ == "__main__":
+    # 数据预处理与加载
+    background_images_dir = './background_images'  # 背景图像目录
+    transform = transforms.Compose([
+        transforms.Resize((28, 28)),
+        transforms.ToTensor(),
+    ])
 
-# 创建子文件夹用于保存训练集和测试集的数字和GT
-for dataset_type in ['train', 'test']:
-    for digit in range(10):
-        os.makedirs(os.path.join(output_dir, dataset_type, str(digit)), exist_ok=True)
+    # 创建输出目录
+    output_dir = 'output_images'
+    os.makedirs(output_dir, exist_ok=True)
 
-# 处理训练集
-train_data = MNIST(root='./data', train=True, download=True)
-train_dataset = CustomMNISTDataset(train_data, background_images_dir, transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    # 创建子文件夹用于保存训练集和测试集的数字和GT
+    for dataset_type in ['train', 'test']:
+        for digit in range(10):
+            os.makedirs(os.path.join(output_dir, dataset_type, str(digit)), exist_ok=True)
 
-# 处理测试集
-test_data = MNIST(root='./data', train=False, download=True)
-test_dataset = CustomMNISTDataset(test_data, background_images_dir, transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    # 处理训练集
+    train_data = MNIST(root='./data', train=True, download=True)
+    train_dataset = CustomMNISTDataset(train_data, background_images_dir, transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
-# 保存训练集合成图片和GT
-for idx, (images, gt, labels) in enumerate(train_loader):
-    for i in range(images.size(0)):
-        label = labels[i].item()
-        img_path = os.path.join(output_dir, 'train', str(label), f'train_image_{idx * 32 + i}.png')
-        gt_path = os.path.join(output_dir, 'train', str(label), f'train_gt_{idx * 32 + i}.png')
-        Image.fromarray((images[i].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)).save(img_path)
-        Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
+    # 处理测试集
+    test_data = MNIST(root='./data', train=False, download=True)
+    test_dataset = CustomMNISTDataset(test_data, background_images_dir, transform=transform)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-# 保存测试集合成图片和GT
-for idx, (images, gt, labels) in enumerate(test_loader):
-    for i in range(images.size(0)):
-        label = labels[i].item()
-        img_path = os.path.join(output_dir, 'test', str(label), f'test_image_{idx * 32 + i}.png')
-        gt_path = os.path.join(output_dir, 'test', str(label), f'test_gt_{idx * 32 + i}.png')
-        Image.fromarray((images[i].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)).save(img_path)
-        Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
+    # 保存训练集合成图片和GT
+    for idx, (images, gt, labels) in enumerate(train_loader):
+        for i in range(images.size(0)):
+            label = labels[i].item()
+            img_path = os.path.join(output_dir, 'train', str(label), f'train_image_{idx * 32 + i}.png')
+            gt_path = os.path.join(output_dir, 'train', str(label), f'train_gt_{idx * 32 + i}.png')
+            Image.fromarray((images[i].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)).save(img_path)
+            Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
 
-print("所有图像和GT已分类保存到:", output_dir)
+    # 保存测试集合成图片和GT
+    for idx, (images, gt, labels) in enumerate(test_loader):
+        for i in range(images.size(0)):
+            label = labels[i].item()
+            img_path = os.path.join(output_dir, 'test', str(label), f'test_image_{idx * 32 + i}.png')
+            gt_path = os.path.join(output_dir, 'test', str(label), f'test_gt_{idx * 32 + i}.png')
+            Image.fromarray((images[i].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)).save(img_path)
+            Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
+
+    print("所有图像和GT已分类保存到:", output_dir)
