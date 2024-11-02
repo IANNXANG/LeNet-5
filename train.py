@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import MNIST
 from data import CustomMNISTDataset  # Assuming your dataset class is in custom_dataset.py
-from FCN import FCN
+from FCN import FCN10
 from LeNet5 import ModifiedLeNet5
 
 model_name = 'ModifiedLeNet5'

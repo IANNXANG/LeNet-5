@@ -1,64 +1,61 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
-from FCN import FCN  # 确保引入你的 FCN 模型
-from data import CustomMNISTDataset  # 确保引入自定义数据集类
+from data import CustomMNISTDataset  # 假设自定义数据集的实现
+from FCN import FCN10  # 假设你的模型在此文件中
 import numpy as np
 
-
-def compute_iou(predictions, targets, num_classes=10):
+def calculate_iou(preds, targets, num_classes):
     iou = []
     for cls in range(num_classes):
-        pred_cls = (predictions == cls).astype(np.uint8)
-        target_cls = (targets == cls).astype(np.uint8)
+        intersection = ((preds == cls) & (targets == cls)).sum().item()
+        union = ((preds == cls) | (targets == cls)).sum().item()
+        iou.append(intersection / union if union != 0 else 0)
+    return sum(iou) / num_classes  # 返回平均 IoU
 
-        intersection = np.sum(pred_cls & target_cls)
-        union = np.sum(pred_cls | target_cls)
+def calculate_mean_accuracy(preds, targets, num_classes):
+    accuracy = []
+    for cls in range(num_classes):
+        correct = ((preds == cls) & (targets == cls)).sum().item()
+        total = (targets == cls).sum().item()
+        accuracy.append(correct / total if total != 0 else 0)
+    return sum(accuracy) / num_classes  # 返回平均准确率
 
-        iou.append(intersection / (union + 1e-6))  # 防止除以零
-    return np.mean(iou)
-
-
-def compute_accuracy(predictions, targets):
-    correct = (predictions == targets).sum().item()
-    total = targets.numel()
-    return correct / total
-
-
-def test(model, test_loader):
-    model.eval()
-    total_iou = 0
-    total_accuracy = 0
-    num_batches = 0
-
-    with torch.no_grad():
-        for images, gt, _ in test_loader:
-            images, gt = images.to(device), gt.to(device)  # 将数据放到 GPU
-            outputs = model(images)
-            predicted = torch.argmax(outputs, dim=1)  # 获取类别索引
-
-            # 计算 IoU 和准确率
-            iou = compute_iou(predicted.cpu().numpy(), gt.argmax(dim=1).cpu().numpy())
-            accuracy = compute_accuracy(predicted, gt.argmax(dim=1))
-
-            total_iou += iou
-            total_accuracy += accuracy
-            num_batches += 1
-
-    mean_iou = total_iou / num_batches
-    mean_accuracy = total_accuracy / num_batches
-
-    print(f'测试结果: 平均 IoU: {mean_iou:.4f}, 平均准确率: {mean_accuracy:.4f}')
-
-
-if __name__ == "__main__":
-    # 设置设备
+def test():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # 加载测试数据集
-    test_dataset = torch.load('test_dataset.pt')
+    test_dataset = torch.load('test_dataset.pt')  # 加载处理后的测试数据集
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    model = FCN(num_classes=10).to(device)  # 确保模型是10个类别
-    model.load_state_dict(torch.load('fcn_model.pth'))
-    test(model, test_loader)
-    print("测试完成.")
+    model = FCN10(num_classes=10).to(device)
+    model.load_state_dict(torch.load('fcn10_model.pth'))  # 加载训练好的模型
+    model.eval()  # 设置模型为评估模式
+
+    all_preds = []
+    all_gt = []
+
+    with torch.no_grad():
+        for images, gt, labels in test_loader:
+            images = images.to(device)
+            gt = gt.to(device)
+            outputs = model(images)
+
+            # 取得每个像素点的预测类别
+            _, predicted = torch.max(outputs, 1)
+            all_preds.append(predicted.cpu().numpy())
+            all_gt.append(gt.cpu().numpy())
+
+    # 将所有预测结果和真实标签合并
+    all_preds = np.concatenate(all_preds)
+    all_gt = np.concatenate(all_gt)
+
+    # 计算IoU和平均准确率
+    mean_iou = calculate_iou(all_preds, all_gt, num_classes=10)
+    mean_accuracy = calculate_mean_accuracy(all_preds, all_gt, num_classes=10)
+
+    print(f'Mean IoU: {mean_iou:.4f}')
+    print(f'Mean Accuracy: {mean_accuracy:.4f}')
+
+if __name__ == "__main__":
+    test()
