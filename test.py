@@ -1,11 +1,14 @@
 import torch
 from torch.utils.data import DataLoader
-from LeNet5 import UpLeNet5,DeConLeNet5, DeConLeNet5Large
+from LeNet5 import UpLeNet5, DeConLeNet5, DeConLeNet5Large
 from data import CustomMNISTDataset  # 确保引入自定义数据集类
 import numpy as np
+import matplotlib.pyplot as plt  # 导入可视化库
 
-model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large'] #保存要测试的模型
-#model_list = ['DeConLeNet5']
+model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large']  # 保存要测试的模型
+
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
+plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
 def compute_iou(predictions, targets):
     predictions = predictions.cpu().numpy().astype(np.uint8)
@@ -23,6 +26,30 @@ def compute_accuracy(predictions, targets):
     return correct / total
 
 
+def visualize(images, predictions, targets, num_images=5):
+    """可视化原图、预测结果和真实结果"""
+    plt.figure(figsize=(15, 5))
+
+    for i in range(min(num_images, images.shape[0])):  # 确保不会超出数组范围
+        plt.subplot(3, num_images, i + 1)
+        # 对于输入图像，需要选择一个通道（如第一个通道）来显示
+        plt.imshow(images[i].cpu().numpy().transpose(1, 2, 0), cmap='gray')  # 转换为(H, W, C)
+        plt.title("输入图片")
+        plt.axis('off')
+
+        plt.subplot(3, num_images, i + 1 + num_images)
+        plt.imshow(predictions[i].cpu().numpy().squeeze(0), cmap='gray')  # 移除通道维度
+        plt.title("分割结果")
+        plt.axis('off')
+
+        plt.subplot(3, num_images, i + 1 + 2 * num_images)
+        plt.imshow(targets[i].cpu().numpy().squeeze(0), cmap='gray')  # 移除通道维度
+        plt.title("Ground Truth")
+        plt.axis('off')
+
+    plt.show()
+
+
 def test(model, test_loader):
     model.eval()
     total_iou = 0
@@ -33,8 +60,7 @@ def test(model, test_loader):
         correct = 0
         total = 0
         for images, gt, labels in test_loader:
-
-            images, gt, labels= images.to(device), gt.to(device), labels.to(device)  # 将数据放到 GPU
+            images, gt, labels = images.to(device), gt.to(device), labels.to(device)  # 将数据放到 GPU
             x, outputs = model(images)
             _, predicted_cls = torch.max(x.data, 1)
             total += labels.size(0)
@@ -47,6 +73,11 @@ def test(model, test_loader):
             total_iou += iou
             total_accuracy += accuracy
             num_batches += 1
+
+            # 可视化部分
+            if num_batches == 100:  # 只可视化第一个批次
+                visualize(images, predicted, gt)
+
     class_accuracy = correct / total
     mean_iou = total_iou / num_batches
     mean_accuracy = total_accuracy / num_batches
@@ -61,6 +92,7 @@ if __name__ == "__main__":
     # 加载测试数据集
     test_dataset = torch.load('test_dataset.pt')
     test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
     for model_name in model_list:
         if model_name == 'UpLeNet5':
             model = UpLeNet5().to(device)  # 将模型放到 GPU
