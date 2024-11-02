@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -49,5 +50,7 @@ if __name__ == "__main__":
         else:
             num_epochs = 10
         trained_model = train(model, train_loader, criterion, optimizer, num_epochs=num_epochs)
+        if not os.path.exists('saved_model'):
+            os.makedirs('saved_model')
         torch.save(trained_model.state_dict(), f'saved_model/{model_name}_10_model.pth')
         print(f"模型已保存为 'saved_model/{model_name}_10_model.pth'.")

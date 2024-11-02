@@ -193,4 +193,4 @@ if __name__ == '__main__':
 
         print(f'Accuracy of the model on the test images: {100 * correct / total}%')
 
-    torch.save(model.state_dict(), 'model/lenet5_model.pth')
+    torch.save(model.state_dict(), 'saved_model/lenet5_model.pth')
