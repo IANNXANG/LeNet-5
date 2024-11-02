@@ -1,11 +1,10 @@
 import torch
 from torch.utils.data import DataLoader
-from FCN import FCN  # 确保引入你的 FCN 模型
+from LeNet5 import UpLeNet5,DeConLeNet5, DeConLeNet5Large
 from data import CustomMNISTDataset  # 确保引入自定义数据集类
 import numpy as np
 
-
-
+model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large'] #保存要测试的模型
 
 def compute_iou(predictions, targets):
     predictions = predictions.cpu().numpy().astype(np.uint8)
@@ -32,7 +31,7 @@ def test(model, test_loader):
     with torch.no_grad():
         for images, gt, _ in test_loader:
             images, gt = images.to(device), gt.to(device)  # 将数据放到 GPU
-            outputs = model(images)
+            _, outputs = model(images)
             predicted = torch.sigmoid(outputs) > 0.5
 
             iou = compute_iou(predicted, gt > 0.5)
@@ -54,9 +53,15 @@ if __name__ == "__main__":
 
     # 加载测试数据集
     test_dataset = torch.load('test_dataset.pt')
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+    for model_name in model_list:
+        if model_name == 'UpLeNet5':
+            model = UpLeNet5().to(device)  # 将模型放到 GPU
+        elif model_name == 'DeConLeNet5':
+            model = DeConLeNet5().to(device)  # 将模型放到 GPU
+        elif model_name == 'DeConLeNet5Large':
+            model = DeConLeNet5Large().to(device)  # 将模型放到 GPU
 
-    model = FCN().to(device)  # 将模型放到 GPU
-    model.load_state_dict(torch.load('fcn_model.pth'))
-    test(model, test_loader)
-    print("测试完成.")
+        model.load_state_dict(torch.load(f'saved_model/{model_name}_model.pth'))
+        test(model, test_loader)
+        print(f"{model_name}测试完成.")
