@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt  # 导入可视化库
 
 model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large']  # 保存要测试的模型
+#model_list = ['DeConLeNet5']
 
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
 plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
