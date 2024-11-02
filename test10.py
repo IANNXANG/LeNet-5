@@ -5,6 +5,7 @@ from data import CustomMNISTDataset  # 确保引入自定义数据集类
 import numpy as np
 
 model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large'] #保存要测试的模型
+#model_list = ['DeConLeNet5']
 
 def compute_iou(predictions, targets):
     predictions = predictions.cpu().numpy().astype(np.uint8)

@@ -6,6 +6,7 @@ from data import CustomMNISTDataset
 from LeNet5 import LeNet5,UpLeNet5,DeConLeNet5,DeConLeNet5Large
 
 model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large'] #保存要训练的模型
+#model_list = ['DeConLeNet5']
 
 def train(model, train_loader, criterion, optimizer, num_epochs):
     model.train()

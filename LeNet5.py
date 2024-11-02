@@ -149,6 +149,7 @@ class DeConLeNet5Large(nn.Module):
 
 
 if __name__ == '__main__':
+    #LENET测试代码
     train_dataset = torch.load('train_dataset.pt')
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     # 加载测试数据集
