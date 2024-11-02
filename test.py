@@ -30,9 +30,15 @@ def test(model, test_loader):
     num_batches = 0
 
     with torch.no_grad():
-        for images, gt, _ in test_loader:
-            images, gt = images.to(device), gt.to(device)  # 将数据放到 GPU
-            _, outputs = model(images)
+        correct = 0
+        total = 0
+        for images, gt, labels in test_loader:
+
+            images, gt, labels= images.to(device), gt.to(device), labels.to(device)  # 将数据放到 GPU
+            x, outputs = model(images)
+            _, predicted_cls = torch.max(x.data, 1)
+            total += labels.size(0)
+            correct += (predicted_cls == labels).sum().item()
             predicted = torch.sigmoid(outputs) > 0.5
 
             iou = compute_iou(predicted, gt > 0.5)
@@ -41,11 +47,11 @@ def test(model, test_loader):
             total_iou += iou
             total_accuracy += accuracy
             num_batches += 1
-
+    class_accuracy = correct / total
     mean_iou = total_iou / num_batches
     mean_accuracy = total_accuracy / num_batches
 
-    print(f'测试结果: 平均 IoU: {mean_iou:.4f}, 平均准确率: {mean_accuracy:.4f}')
+    print(f'测试结果: 平均 IoU: {mean_iou:.4f}, 平均准确率: {mean_accuracy:.4f}, 分类准确率: {class_accuracy:.4f}')
 
 
 if __name__ == "__main__":
@@ -63,6 +69,6 @@ if __name__ == "__main__":
         elif model_name == 'DeConLeNet5Large':
             model = DeConLeNet5Large().to(device)  # 将模型放到 GPU
 
-        model.load_state_dict(torch.load(f'saved_model/{model_name}_model.pth'))
+        model.load_state_dict(torch.load(f'saved_model/{model_name}_10_model.pth'))
         test(model, test_loader)
         print(f"{model_name}测试完成.")

@@ -9,14 +9,17 @@ from LeNet5 import LeNet5,UpLeNet5,DeConLeNet5,DeConLeNet5Large
 model_list = ['UpLeNet5', 'DeConLeNet5', 'DeConLeNet5Large'] #保存要训练的模型
 #model_list = ['DeConLeNet5']
 
+
 def train(model, train_loader, criterion, optimizer, num_epochs):
     model.train()
     for epoch in range(num_epochs):
-        for images, gt, _ in train_loader:
-            images, gt = images.to(device), gt.to(device)  # 将数据放到 GPU
+        for images, gt, labels in train_loader:
+            images, gt, labels= images.to(device), gt.to(device), labels.to(device)  # 将数据放到 GPU
             optimizer.zero_grad()
             xs , outputs = model(images)
-            loss = criterion(outputs, gt)
+            loss_cls = criterion_cls(xs, labels)
+            loss_seg = criterion(outputs, gt)
+            loss = loss_cls + loss_seg
             loss.backward()
             optimizer.step()
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
@@ -24,6 +27,7 @@ def train(model, train_loader, criterion, optimizer, num_epochs):
 
 if __name__ == "__main__":
     # 设置设备
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # 加载数据集
@@ -39,6 +43,7 @@ if __name__ == "__main__":
 
         # 定义损失函数和优化器
         criterion = nn.BCEWithLogitsLoss()
+        criterion_cls = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
         if model_name == 'DeConLeNet5Large':
             num_epochs = 20
@@ -47,5 +52,5 @@ if __name__ == "__main__":
         trained_model = train(model, train_loader, criterion, optimizer, num_epochs=num_epochs)
         if not os.path.exists('saved_model'):
             os.makedirs('saved_model')
-        torch.save(trained_model.state_dict(), f'saved_model/{model_name}_model.pth')
-        print(f"模型已保存为 'saved_model/{model_name}_model.pth'.")
+        torch.save(trained_model.state_dict(), f'saved_model/{model_name}_10_model.pth')
+        print(f"模型已保存为 'saved_model/{model_name}_10_model.pth'.")
