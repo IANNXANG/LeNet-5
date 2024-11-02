@@ -1,7 +1,6 @@
+import os
 import torch
 import torch.nn as nn
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from data import CustomMNISTDataset
 
@@ -165,7 +164,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # 训练模型
-    num_epochs = 10
+    num_epochs = 5
     for epoch in range(num_epochs):
         for i, (images, _ , labels) in enumerate(train_loader):
             images = images.to(device)
@@ -192,5 +191,6 @@ if __name__ == '__main__':
             correct += (predicted == labels).sum().item()
 
         print(f'Accuracy of the model on the test images: {100 * correct / total}%')
-
+    if not os.path.exists('saved_model'):
+        os.makedirs('saved_model')
     torch.save(model.state_dict(), 'saved_model/lenet5_model.pth')
