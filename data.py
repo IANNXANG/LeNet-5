@@ -99,3 +99,8 @@ if __name__ == "__main__":
             Image.fromarray((gt[i].numpy()[0] * 255).astype(np.uint8)).save(gt_path)
 
     print("所有图像和GT已分类保存到:", output_dir)
+    # 保存处理后的数据集
+    torch.save(train_dataset, 'train_dataset.pt')
+    torch.save(test_dataset, 'test_dataset.pt')
+
+    print("处理后的数据集已保存为 PyTorch 格式.")
