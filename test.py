@@ -75,7 +75,7 @@ def test(model, test_loader):
             num_batches += 1
 
             # 可视化部分
-            if num_batches == 100:  # 只可视化第一个批次
+            if num_batches == 100:  # 只可视化一个批次
                 visualize(images, predicted, gt)
 
     class_accuracy = correct / total
